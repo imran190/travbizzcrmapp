@@ -6,12 +6,15 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Settings;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowInsets;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.GeolocationPermissions;
@@ -43,6 +46,7 @@ public class MainActivity extends android.app.Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        configureSystemBarsAndInsets();
 
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
@@ -61,6 +65,34 @@ public class MainActivity extends android.app.Activity {
         } else {
             webView.restoreState(savedInstanceState);
         }
+    }
+
+
+    private void configureSystemBarsAndInsets() {
+        Window window = getWindow();
+        window.setStatusBarColor(Color.rgb(7, 64, 76));
+        window.setNavigationBarColor(Color.rgb(7, 64, 76));
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.getDecorView().setSystemUiVisibility(0);
+        }
+
+        View root = findViewById(R.id.rootContainer);
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            int topInset;
+            int bottomInset;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                topInset = bars.top;
+                bottomInset = bars.bottom;
+            } else {
+                topInset = insets.getSystemWindowInsetTop();
+                bottomInset = insets.getSystemWindowInsetBottom();
+            }
+            view.setPadding(0, topInset, 0, bottomInset);
+            return insets;
+        });
+        root.requestApplyInsets();
     }
 
     private void configureWebView() {
@@ -118,9 +150,16 @@ public class MainActivity extends android.app.Activity {
                     "(function(){" +
                     "var m=document.querySelector('meta[name=viewport]');" +
                     "if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}" +
-                    "m.content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';" +
+                    "m.content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';" +
                     "document.documentElement.style.webkitTextSizeAdjust='100%';" +
                     "document.body.style.webkitOverflowScrolling='touch';" +
+                    "function fixBottomNav(){" +
+                    "var maxH=0;document.querySelectorAll('body *').forEach(function(el){" +
+                    "var s=getComputedStyle(el),r=el.getBoundingClientRect();" +
+                    "if((s.position==='fixed'||s.position==='sticky')&&parseFloat(s.bottom||'999')<=1&&r.width>innerWidth*.6&&r.height>35&&r.height<180){maxH=Math.max(maxH,r.height);el.style.zIndex='2147483000';}" +
+                    "});if(maxH>0){document.body.style.paddingBottom=Math.max(parseFloat(getComputedStyle(document.body).paddingBottom)||0,maxH)+'px';}" +
+                    "}" +
+                    "fixBottomNav();setTimeout(fixBottomNav,500);setTimeout(fixBottomNav,1500);" +
                     "})();", null);
             }
 
