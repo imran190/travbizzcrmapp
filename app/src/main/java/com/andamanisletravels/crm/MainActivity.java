@@ -45,9 +45,8 @@ public class MainActivity extends android.app.Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        configureSystemBars();
         setContentView(R.layout.activity_main);
-        configureSystemBarInsets();
+        configureSystemBarsSafely();
 
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
@@ -69,23 +68,17 @@ public class MainActivity extends android.app.Activity {
     }
 
 
-    private void configureSystemBars() {
+    private void configureSystemBarsSafely() {
         Window window = getWindow();
         int chromeColor = Color.rgb(7, 64, 76);
 
         window.setStatusBarColor(chromeColor);
         window.setNavigationBarColor(chromeColor);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            window.setStatusBarContrastEnforced(false);
-            window.setNavigationBarContrastEnforced(false);
-            window.setNavigationBarDividerColor(chromeColor);
-        }
-
-        // Keep white status/navigation icons. On Android 15 the bars can be
-        // transparent because of enforced edge-to-edge, so the root view also
-        // paints the same dark CRM color behind them.
+        // Ask Android to keep app content inside the system bars. This avoids
+        // status-bar overlap without relying on a custom inset listener.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(true);
             android.view.WindowInsetsController controller = window.getInsetsController();
             if (controller != null) {
                 controller.setSystemBarsAppearance(
@@ -97,27 +90,6 @@ public class MainActivity extends android.app.Activity {
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             window.getDecorView().setSystemUiVisibility(0);
         }
-    }
-
-    private void configureSystemBarInsets() {
-        View root = findViewById(R.id.rootContainer);
-        root.setBackgroundColor(Color.rgb(7, 64, 76));
-        root.setOnApplyWindowInsetsListener((view, insets) -> {
-            int topInset;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                android.graphics.Insets statusBars = insets.getInsets(WindowInsets.Type.statusBars());
-                topInset = statusBars.top;
-            } else {
-                topInset = insets.getSystemWindowInsetTop();
-            }
-
-            // Only reserve the status-bar area. Do not add bottom padding to
-            // the WebView: doing that lifted the website's fixed menu and left
-            // scrolling page content visible underneath it.
-            view.setPadding(0, topInset, 0, 0);
-            return insets;
-        });
-        root.requestApplyInsets();
     }
 
     private void configureWebView() {
@@ -183,7 +155,7 @@ public class MainActivity extends android.app.Activity {
                     "var s=getComputedStyle(el),r=el.getBoundingClientRect(),b=parseFloat(s.bottom||'999');" +
                     "if((s.position==='fixed'||s.position==='sticky')&&b<80&&r.width>innerWidth*.75&&r.height>45&&r.height<190){if(r.height>maxH){maxH=r.height;best=el;}}" +
                     "});if(best){best.style.setProperty('bottom','0px','important');best.style.setProperty('margin-bottom','0px','important');best.style.setProperty('z-index','2147483000','important');" +
-                    "var current=parseFloat(getComputedStyle(document.body).paddingBottom)||0;document.body.style.setProperty('padding-bottom',Math.max(current,maxH)+'px','important');}" +
+                    "document.documentElement.style.setProperty('padding-bottom',maxH+'px','important');document.body.style.setProperty('padding-bottom',maxH+'px','important');}" +
                     "}" +
                     "fixBottomNav();setTimeout(fixBottomNav,500);setTimeout(fixBottomNav,1500);" +
                     "})();", null);
