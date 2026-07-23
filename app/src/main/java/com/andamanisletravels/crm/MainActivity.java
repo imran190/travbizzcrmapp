@@ -31,7 +31,7 @@ import android.widget.Toast;
 import java.net.URISyntaxException;
 
 public class MainActivity extends android.app.Activity {
-    private static final String HOME_URL = "https://andamanisletravels.in/crm/";
+    private static final String HOME_URL = "https://catchatripcrm.com/";
     private static final int FILE_CHOOSER_REQUEST = 1001;
 
     private WebView webView;
@@ -184,7 +184,7 @@ public class MainActivity extends android.app.Activity {
                 if (cookies != null) request.addRequestHeader("Cookie", cookies);
                 String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
                 request.setTitle(fileName);
-                request.setDescription("Downloading from Andaman Isle CRM");
+                request.setDescription("Catcha Trip");
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                 request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
                 DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
