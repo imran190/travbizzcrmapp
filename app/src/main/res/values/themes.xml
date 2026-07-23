@@ -5,9 +5,12 @@
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:colorAccent">@color/brand_blue</item>
-        <item name="android:navigationBarColor">@color/white</item>
-        <item name="android:statusBarColor">@color/white</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/crm_chrome</item>
+        <item name="android:navigationBarColor">@color/crm_chrome</item>
+        <item name="android:navigationBarDividerColor">@color/crm_chrome</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowSplashScreenBackground">@color/white</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_transparent</item>
         <item name="android:windowSplashScreenAnimationDuration">0</item>

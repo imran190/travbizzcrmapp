@@ -45,8 +45,9 @@ public class MainActivity extends android.app.Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        configureSystemBars();
         setContentView(R.layout.activity_main);
-        configureSystemBarsAndInsets();
+        configureSystemBarInsets();
 
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
@@ -68,28 +69,52 @@ public class MainActivity extends android.app.Activity {
     }
 
 
-    private void configureSystemBarsAndInsets() {
+    private void configureSystemBars() {
         Window window = getWindow();
-        window.setStatusBarColor(Color.rgb(7, 64, 76));
-        window.setNavigationBarColor(Color.rgb(7, 64, 76));
+        int chromeColor = Color.rgb(7, 64, 76);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            window.getDecorView().setSystemUiVisibility(0);
+        window.setStatusBarColor(chromeColor);
+        window.setNavigationBarColor(chromeColor);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+            window.setNavigationBarDividerColor(chromeColor);
         }
 
+        // Keep white status/navigation icons. On Android 15 the bars can be
+        // transparent because of enforced edge-to-edge, so the root view also
+        // paints the same dark CRM color behind them.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            android.view.WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                controller.setSystemBarsAppearance(
+                        0,
+                        android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                                | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+                );
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.getDecorView().setSystemUiVisibility(0);
+        }
+    }
+
+    private void configureSystemBarInsets() {
         View root = findViewById(R.id.rootContainer);
+        root.setBackgroundColor(Color.rgb(7, 64, 76));
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             int topInset;
-            int bottomInset;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
-                topInset = bars.top;
-                bottomInset = bars.bottom;
+                android.graphics.Insets statusBars = insets.getInsets(WindowInsets.Type.statusBars());
+                topInset = statusBars.top;
             } else {
                 topInset = insets.getSystemWindowInsetTop();
-                bottomInset = insets.getSystemWindowInsetBottom();
             }
-            view.setPadding(0, topInset, 0, bottomInset);
+
+            // Only reserve the status-bar area. Do not add bottom padding to
+            // the WebView: doing that lifted the website's fixed menu and left
+            // scrolling page content visible underneath it.
+            view.setPadding(0, topInset, 0, 0);
             return insets;
         });
         root.requestApplyInsets();
@@ -154,10 +179,11 @@ public class MainActivity extends android.app.Activity {
                     "document.documentElement.style.webkitTextSizeAdjust='100%';" +
                     "document.body.style.webkitOverflowScrolling='touch';" +
                     "function fixBottomNav(){" +
-                    "var maxH=0;document.querySelectorAll('body *').forEach(function(el){" +
-                    "var s=getComputedStyle(el),r=el.getBoundingClientRect();" +
-                    "if((s.position==='fixed'||s.position==='sticky')&&parseFloat(s.bottom||'999')<=1&&r.width>innerWidth*.6&&r.height>35&&r.height<180){maxH=Math.max(maxH,r.height);el.style.zIndex='2147483000';}" +
-                    "});if(maxH>0){document.body.style.paddingBottom=Math.max(parseFloat(getComputedStyle(document.body).paddingBottom)||0,maxH)+'px';}" +
+                    "var maxH=0,best=null;document.querySelectorAll('body *').forEach(function(el){" +
+                    "var s=getComputedStyle(el),r=el.getBoundingClientRect(),b=parseFloat(s.bottom||'999');" +
+                    "if((s.position==='fixed'||s.position==='sticky')&&b<80&&r.width>innerWidth*.75&&r.height>45&&r.height<190){if(r.height>maxH){maxH=r.height;best=el;}}" +
+                    "});if(best){best.style.setProperty('bottom','0px','important');best.style.setProperty('margin-bottom','0px','important');best.style.setProperty('z-index','2147483000','important');" +
+                    "var current=parseFloat(getComputedStyle(document.body).paddingBottom)||0;document.body.style.setProperty('padding-bottom',Math.max(current,maxH)+'px','important');}" +
                     "}" +
                     "fixBottomNav();setTimeout(fixBottomNav,500);setTimeout(fixBottomNav,1500);" +
                     "})();", null);
